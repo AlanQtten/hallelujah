@@ -1,5 +1,5 @@
 import songs from './common/songs'
-import {Button, Form, Input, List,} from "antd-mobile";
+import {Button, Form, Input, List, Toast,} from "antd-mobile";
 import SongPopup from "./components/SongPopup.tsx";
 import {useEffect, useLayoutEffect, useState} from "react";
 
@@ -38,19 +38,31 @@ function App() {
     </Form>
 }
 
+const getSong = (songName, index) => ({
+  name: songName,
+  songUrl: `./static/mp3/${index + 1}_${songName}.mp3`,
+  lrcUrl: `./static/lrc/${index + 1}_${songName}.lrc`,
+  index: index,
+})
+
 function SongList() {
   const [songPopupVisible, setSongPopupVisible] = useState(false)
   const [song, setSong] = useState<any>()
 
-  const startPlay = (song, index) => {
+  const startPlay = (songName, index) => {
     setSongPopupVisible(true)
 
-    setSong({
-      name: song,
-      songUrl: `./static/mp3/${index + 1}_${song}.mp3`,
-      lrcUrl: `./static/lrc/${index + 1}_${song}.lrc`,
-      index: index,
-    })
+    setSong(getSong(songName, index))
+  }
+
+  const toPre = () => {
+    const songName = songs[song.index - 1]
+    setSong(getSong(songName, song.index - 1))
+  }
+
+  const toNext = () => {
+    const songName = songs[song.index + 1]
+    setSong(getSong(songName, song.index + 1))
   }
 
   return <List>
@@ -71,6 +83,8 @@ function SongList() {
       visible={songPopupVisible}
       setVisible={setSongPopupVisible}
       song={song}
+      toPre={toPre}
+      toNext={toNext}
     />
   </List>
 }

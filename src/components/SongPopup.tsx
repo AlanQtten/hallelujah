@@ -1,9 +1,10 @@
-import { Popup, Slider } from "antd-mobile";
+import { Popup, Slider, Toast } from "antd-mobile";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createUseStyles } from "react-jss";
 import {DownOutline, LeftOutline, PlayOutline, RightOutline} from "antd-mobile-icons";
 import cx from 'classnames'
 import {CaretRightOutlined, PauseOutlined} from "@ant-design/icons";
+import songs from "../common/songs.ts";
 
 const useStyle = createUseStyles({
   wrapper: {
@@ -94,7 +95,9 @@ export default function SongPopup(props) {
   const {
     visible,
     setVisible,
-    song = {}
+    song = {},
+    toPre = () => {},
+    toNext = () => {}
   } = props
   const classes = useStyle()
   const [songUrl, setSongUrl] = useState('')
@@ -140,7 +143,7 @@ export default function SongPopup(props) {
       .then(resp => resp.text())
       .then(resp => {
         setLyrics(resp
-          .replaceAll('\r', '')
+          .replace(/\r/g, '')
           .split('\n')
           .filter(Boolean)
           .reduce((pre, current) => {
@@ -161,6 +164,12 @@ export default function SongPopup(props) {
             return pre
           }, [])
         )
+      })
+      .catch(e => {
+        Toast.show({
+          icon: 'fail',
+          content: e.message
+        })
       })
   }
 
@@ -236,8 +245,7 @@ export default function SongPopup(props) {
     audio.current.play()
   }
 
-  const back = () => {
-    setVisible(false)
+  const resetAll = () => {
     setPlaying(false)
     setCurrentTime(0)
     setExactCurrentTime(0)
@@ -247,6 +255,35 @@ export default function SongPopup(props) {
     clearDisabledAutoScrollTimer()
     setDisabledAutoScroll(false)
     audio.current.pause()
+  }
+
+  const back = () => {
+    setVisible(false)
+    resetAll()
+  }
+
+  const internalToPre = () => {
+    if(song.index === 0) {
+      Toast.show({
+        content: '已经是第一首了'
+      })
+      return
+    }
+
+    resetAll()
+    toPre()
+  }
+
+  const internalToNext = () => {
+    if(song.index === songs.length - 1) {
+      Toast.show({
+        content: '已经是最后一首了'
+      })
+      return
+    }
+
+    resetAll()
+    toNext()
   }
 
   const togglePlay = () => {
@@ -325,7 +362,7 @@ export default function SongPopup(props) {
         </div>
 
         <div className={classes.controlBtnWrapper}>
-          <button>
+          <button onClick={internalToPre}>
             <LeftOutline />
           </button>
 
@@ -335,7 +372,7 @@ export default function SongPopup(props) {
             }
           </button>
 
-          <button>
+          <button onClick={internalToNext}>
             <RightOutline />
           </button>
         </div>
