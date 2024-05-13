@@ -1,10 +1,11 @@
-import { Popup, Slider, Toast } from "antd-mobile";
+import {Button, Popup, Slider, Toast} from "antd-mobile";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createUseStyles } from "react-jss";
 import {DownOutline, LeftOutline, PlayOutline, RightOutline} from "antd-mobile-icons";
 import cx from 'classnames'
-import {CaretRightOutlined, PauseOutlined} from "@ant-design/icons";
+import {PauseOutlined} from "@ant-design/icons";
 import songs from "../common/songs.ts";
+import shuffle from "../utils/shuffle.ts";
 
 const useStyle = createUseStyles({
   wrapper: {
@@ -64,16 +65,8 @@ const useStyle = createUseStyles({
     display: 'flex',
     justifyContent: 'center',
     color: '#fff',
-    fontSize: '1.5rem',
     '&>button': {
-      border: '2px solid #fff',
-      borderRadius: '50%',
-      padding: 8,
-      width: '2.5rem',
-      height: '2.5rem',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
+      color: "#fff",
       '&:not(:last-child)': {
         marginRight: '5vw'
       }
@@ -91,6 +84,30 @@ const transformTimestamp = (ts) => {
   return (+min) * 60 + +secondWithMillisecond
 }
 
+enum PlayModeType {
+  ListRepeat,
+  SingleRepeat,
+  Random,
+}
+
+const playModeType = [
+  {
+    icon: 'icon-24gl-repeat2',
+    name: '列表循环',
+    mode: PlayModeType.ListRepeat
+  },
+  {
+    icon: 'icon-24gl-repeatOnce2',
+    name: '单曲循环',
+    mode: PlayModeType.SingleRepeat
+  },
+  {
+    icon: 'icon-24gl-shuffle',
+    name: '随机播放',
+    mode: PlayModeType.Random
+  }
+]
+
 export default function SongPopup(props) {
   const {
     visible,
@@ -107,6 +124,7 @@ export default function SongPopup(props) {
   const [exactCurrentTime, setExactCurrentTime] = useState(0)
   const [dragCurrentTime, setCurrentDragTime] = useState(0)
   const [playing, setPlaying] = useState(false)
+  const [playMode, setPlayMode] = useState<PlayModeType>(PlayModeType.ListRepeat)
 
   const [lyrics, setLyrics] = useState([])
 
@@ -114,6 +132,30 @@ export default function SongPopup(props) {
   const container = useRef<HTMLDivElement>()
   const [disabledAutoScroll, setDisabledAutoScroll] = useState(false)
   const [disabledAutoScrollTimer, setDisabledAutoScrollTimer] = useState(null)
+
+  const changePlayMode = () => {
+    const currentPlayModeIndex = playModeType.findIndex(p => p.mode === playMode)
+    const nextPlayModeIndex = currentPlayModeIndex + 1
+
+    let targetPlayMode = null
+    if(nextPlayModeIndex > playModeType.length - 1) {
+      targetPlayMode = playModeType[0]
+    }else {
+      targetPlayMode = playModeType[nextPlayModeIndex]
+    }
+
+    setPlayMode(targetPlayMode.mode)
+    Toast.show({
+      content: targetPlayMode.name
+    })
+    // if(targetPlayMode.mode === PlayModeType.Random) {
+    //   console.log(shuffle(songs));
+    // }
+  }
+
+  const playModeIcon = useMemo(() => {
+    return playModeType.find(p => p.mode === playMode).icon
+  }, [playMode])
 
   const currentPre = useMemo(() => {
     const targetTime = dragCurrentTime || currentTime
@@ -139,9 +181,20 @@ export default function SongPopup(props) {
   }, [visible, song])
 
   const loadLyrics = (lyricsUrl) => {
+    Toast.show({
+      icon: 'success',
+      content: lyricsUrl
+    })
     fetch(lyricsUrl)
       .then(resp => resp.text())
       .then(resp => {
+        setTimeout(() => {
+          Toast.show({
+            icon: 'success',
+            content: resp
+          })
+        }, 2000)
+        return
         setLyrics(resp
           .replace(/\r/g, '')
           .split('\n')
@@ -166,10 +219,10 @@ export default function SongPopup(props) {
         )
       })
       .catch(e => {
-        Toast.show({
-          icon: 'fail',
-          content: e.message
-        })
+        // Toast.show({
+        //   icon: 'fail',
+        //   content: e.message
+        // })
       })
   }
 
@@ -210,8 +263,18 @@ export default function SongPopup(props) {
   }
 
   const onPlayEnd = () => {
-    setCurrentTime(0)
-    pause()
+    switch (playMode) {
+      case PlayModeType.ListRepeat:
+        internalToPre()
+        break
+      case PlayModeType.Random:
+
+      case PlayModeType.SingleRepeat:
+      default:
+        setCurrentTime(0)
+        play()
+        break
+    }
   }
 
   const onChange = time => {
@@ -246,8 +309,8 @@ export default function SongPopup(props) {
   }
 
   const resetAll = () => {
-    setPlaying(false)
     setCurrentTime(0)
+    setPlaying(false)
     setExactCurrentTime(0)
     setCurrentDragTime(0)
     setLastSecond(0)
@@ -362,19 +425,25 @@ export default function SongPopup(props) {
         </div>
 
         <div className={classes.controlBtnWrapper}>
-          <button onClick={internalToPre}>
-            <LeftOutline />
-          </button>
+          <Button onClick={changePlayMode} fill='none' size='large'>
+            <i className={cx(['iconfont', playModeIcon])}/>
+          </Button>
 
-          <button onClick={togglePlay}>
-            {
-              playing ? <PauseOutlined /> : <PlayOutline />
-            }
-          </button>
+          <Button onClick={internalToPre} fill='none' size='large'>
+            <i className='iconfont icon-24gl-previous'/>
+          </Button>
 
-          <button onClick={internalToNext}>
-            <RightOutline />
-          </button>
+          <Button onClick={togglePlay} fill='none' size='large'>
+            <i className={cx(['iconfont', playing ? 'icon-24gl-pause2' : 'icon-24gl-play'])}/>
+          </Button>
+
+          <Button onClick={internalToNext} fill='none' size='large'>
+            <i className='iconfont icon-24gl-next'/>
+          </Button>
+
+          <Button fill='none' size='large'>
+            <i className='iconfont icon-24gl-heart'/>
+          </Button>
         </div>
       </div>
     </div>

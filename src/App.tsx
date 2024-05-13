@@ -1,41 +1,42 @@
 import songs from './common/songs'
-import {Button, Form, Input, List, Toast,} from "antd-mobile";
+import {Button, Form, Input, List, Slider,} from "antd-mobile";
 import SongPopup from "./components/SongPopup.tsx";
 import {useEffect, useLayoutEffect, useState} from "react";
 
 const correctPwd = 'cyq600103'
 
 function App() {
-  const [pass, setPass] = useState(false)
-
-  const onFinish = (values) => {
-    setPass(values.password === correctPwd)
-    localStorage.setItem('password', values.password)
-  }
-
-  useEffect(() => {
-    document.title = pass ? '赞美诗400首' : '请输入密码'
-  }, [pass])
-
-  useLayoutEffect(() => {
-    const pwd = localStorage.getItem('password')
-
-    setPass(pwd === correctPwd)
-  }, [])
-
-  return pass
-    ? <SongList />
-    : <Form onFinish={onFinish}>
-      <Form.Item name='password' label='密码' rules={[
-        { required: true }
-      ]}>
-        <Input />
-      </Form.Item>
-
-      <Form.Item>
-        <Button color='primary' type='submit'>提交</Button>
-      </Form.Item>
-    </Form>
+  return <Slider />
+  // const [pass, setPass] = useState(false)
+  //
+  // const onFinish = (values) => {
+  //   setPass(values.password === correctPwd)
+  //   localStorage.setItem('password', values.password)
+  // }
+  //
+  // useEffect(() => {
+  //   document.title = pass ? '赞美诗400首' : '请输入密码'
+  // }, [pass])
+  //
+  // useLayoutEffect(() => {
+  //   const pwd = localStorage.getItem('password')
+  //
+  //   setPass(pwd === correctPwd)
+  // }, [])
+  //
+  // return pass
+  //   ? <SongList />
+  //   : <Form onFinish={onFinish}>
+  //     <Form.Item name='password' label='密码' rules={[
+  //       { required: true }
+  //     ]}>
+  //       <Input />
+  //     </Form.Item>
+  //
+  //     <Form.Item>
+  //       <Button color='primary' type='submit'>提交</Button>
+  //     </Form.Item>
+  //   </Form>
 }
 
 const getSong = (songName, index) => ({
